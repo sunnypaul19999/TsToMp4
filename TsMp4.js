@@ -77,15 +77,16 @@ function executeCommands(filename, commands) {
     try {
         child_process.execSync(commands[0], { cwd: getTargetDirPath() });
 
-        cleanFile(filepath());
+        cleanFile(filepath(filename));
 
-        //executing command[1]
-        console.log(commands[1]);
 
         try {
+            //executing command[1]
+            console.log(commands[1]);
+
             child_process.execSync(commands[1], { cwd: getTargetDirPath() });
 
-            cleanFile(tempFileCopyPath());
+            cleanFile(tempFileCopyPath(filename));
 
             console.log('success');
         } catch (err) {
