@@ -33,8 +33,8 @@ function mp4Filepath(filename) {
 function getCommandList(filename) {
     let commands = [];
 
-    commands.push(`ffmpeg -i "${filepath()}" -c copy "${tempFileCopyPath()}"`);
-    commands.push(`ffmpeg -i "${tempFileCopyPath()}" -c copy "${mp4Filepath()}"`);
+    commands.push(`ffmpeg -i "${filepath(filename)}" -c copy "${tempFileCopyPath(filename)}"`);
+    commands.push(`ffmpeg -i "${tempFileCopyPath(filename)}" -c copy "${mp4Filepath(filename)}"`);
 
     console.log(commands);
 
@@ -63,8 +63,12 @@ function createReqDirectory() {
     }
 }
 
+function cleanFile(filepath) {
+    fs.rmSync(filepath);
+}
 
-function executeCommands(commands) {
+
+function executeCommands(filename, commands) {
 
     //executing command[0]
     console.log(commands[0]);
@@ -73,18 +77,22 @@ function executeCommands(commands) {
     try {
         child_process.execSync(commands[0], { cwd: getTargetDirPath() });
 
+        cleanFile(filepath());
+
         //executing command[1]
         console.log(commands[1]);
 
         try {
             child_process.execSync(commands[1], { cwd: getTargetDirPath() });
 
+            cleanFile(tempFileCopyPath());
+
             console.log('success');
         } catch (err) {
-            fs.rmSync(tempFileCopyPath());
+
         }
     } catch (err) {
-        fs.rmSync(filepath());
+
     }
 }
 
@@ -109,7 +117,7 @@ function processFiles() {
 
         commands = getCommandList(filename);
 
-        executeCommands(commands);
+        executeCommands(filename, commands);
 
         //break;
     }
