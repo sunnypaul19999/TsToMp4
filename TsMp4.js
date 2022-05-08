@@ -132,3 +132,6 @@ function run() {
 
 
 run();
+
+//if duplicate is there then ffmpeg will ask to overwrite which is not handle therefore process will exist
+//output ffmpeg is displayed needs to stopped
