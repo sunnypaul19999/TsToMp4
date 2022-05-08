@@ -1,37 +1,80 @@
-const { opendir } = require('node:fs/promises');
+const fs = require('node:fs');
 
 const child_process = require('node:child_process');
-const { stderr } = require('node:process');
 
-function getCommandList(filepath) {
+let reqDir = {
+    targetDir: null,
+    mp4: () => `${getTargetDirPath()}\\mp4`,
+    tempCopyTs: () => `${getTargetDirPath()}\\tempCopyTs`,
+}
+
+function getTargetDirPath() {
+    return reqDir.targetDir;
+}
+
+
+function getTargetDir() {
+    console.log(getTargetDirPath());
+    return fs.opendirSync(getTargetDirPath());
+}
+
+
+function getCommandList(filename) {
     let commands = [];
-    commands.push(`ffmpeg -i "${filepath}.ts" -c copy "${filepath} copy.ts"`);
-    commands.push(`ffmpeg -i "${filepath} copy.ts" -c copy "${filepath}.mp4"`);
 
-    //console.log(commands);
+    const filepath = `${getTargetDirPath()}\\${filename}.ts`;
+
+    const tempFileCopyPath = `${reqDir.tempCopyTs()}\\${filename}_copy.ts`;
+
+    const mp4Filepath = `${reqDir.mp4()}\\${filename}.mp4`;
+
+    commands.push(`ffmpeg -i "${filepath}" -c copy "${tempFileCopyPath}"`);
+    commands.push(`ffmpeg -i "${tempFileCopyPath}" -c copy "${mp4Filepath}"`);
+
+    console.log(commands);
 
     return commands;
 }
 
-function getTargetDir(dirPath) {
-    return opendir(dirPath);
+
+function createReqDirectory() {
+    let tempCopyTsDir, mp4;
+    try {
+        tempCopyTsDir = fs.opendirSync(reqDir.tempCopyTs());
+    } catch (err) {
+        if (!tempCopyTsDir) {
+            fs.mkdirSync(reqDir.tempCopyTs());
+        }
+    }
+
+    try {
+        mp4 = fs.opendirSync(reqDir.mp4());
+    } catch (err) {
+        if (!mp4) {
+            fs.mkdirSync(reqDir.mp4());
+        }
+    }
 }
 
-function executeCommands(dirPath, commands) {
+
+function executeCommands(commands) {
+    createReqDirectory();
+
     //executing command[0]
     console.log(commands[0]);
 
+
     try {
-        child_process.execSync(commands[0], { cwd: dirPath });
+        child_process.execSync(commands[0], { cwd: getTargetDirPath() });
 
         //executing command[1]
         console.log(commands[1]);
 
         try {
-            child_process.execSync(commands[1], { cwd: dirPath });
-            
+            child_process.execSync(commands[1], { cwd: getTargetDirPath() });
+
             console.log('success');
-        } catch (err) { 
+        } catch (err) {
 
         }
     } catch (err) {
@@ -39,26 +82,37 @@ function executeCommands(dirPath, commands) {
     }
 }
 
-async function getTsFilesInDir(dirPath) {
+
+function getTsFilesInDir() {
     let dirent;
+    let filename;
     let commands;
 
-    const targetDir = await getTargetDir(dirPath);
+    const targetDir = getTargetDir();
 
     while (true) {
-        dirent = await targetDir.read();
+        dirent = targetDir.readSync();
 
         if (dirent === null) break;
 
         if (!dirent.name.endsWith('.ts')) continue;
 
-        commands = getCommandList(`${dirPath}\\${dirent.name.split('.ts')[0]}`);
+        filename = dirent.name.split('.ts')[0];
 
-        executeCommands(dirPath, commands);
+        commands = getCommandList(filename);
 
-        break;
+        executeCommands(commands);
+
+        //break;
     }
 }
 
-console.log(process.cwd());
-getTsFilesInDir('E:\\tsvids');
+
+function run() {
+    reqDir.targetDir = 'E:\\tsvids';
+    Object.freeze(reqDir);
+    getTsFilesInDir();
+}
+
+
+run();
