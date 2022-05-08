@@ -18,18 +18,23 @@ function getTargetDir() {
     return fs.opendirSync(getTargetDirPath());
 }
 
+function filepath(filename) {
+    return `${getTargetDirPath()}\\${filename}.ts`;
+}
+
+function tempFileCopyPath(filename) {
+    return `${reqDir.tempCopyTs()}\\${filename}_copy.ts`;
+}
+
+function mp4Filepath(filename) {
+    return `${reqDir.mp4()}\\${filename}.mp4`;
+}
 
 function getCommandList(filename) {
     let commands = [];
 
-    const filepath = `${getTargetDirPath()}\\${filename}.ts`;
-
-    const tempFileCopyPath = `${reqDir.tempCopyTs()}\\${filename}_copy.ts`;
-
-    const mp4Filepath = `${reqDir.mp4()}\\${filename}.mp4`;
-
-    commands.push(`ffmpeg -i "${filepath}" -c copy "${tempFileCopyPath}"`);
-    commands.push(`ffmpeg -i "${tempFileCopyPath}" -c copy "${mp4Filepath}"`);
+    commands.push(`ffmpeg -i "${filepath()}" -c copy "${tempFileCopyPath()}"`);
+    commands.push(`ffmpeg -i "${tempFileCopyPath()}" -c copy "${mp4Filepath()}"`);
 
     console.log(commands);
 
@@ -41,6 +46,7 @@ function createReqDirectory() {
     let tempCopyTsDir, mp4;
     try {
         tempCopyTsDir = fs.opendirSync(reqDir.tempCopyTs());
+        tempCopyTsDir.closeSync();
     } catch (err) {
         if (!tempCopyTsDir) {
             fs.mkdirSync(reqDir.tempCopyTs());
@@ -49,6 +55,7 @@ function createReqDirectory() {
 
     try {
         mp4 = fs.opendirSync(reqDir.mp4());
+        mp4.closeSync();
     } catch (err) {
         if (!mp4) {
             fs.mkdirSync(reqDir.mp4());
@@ -58,7 +65,6 @@ function createReqDirectory() {
 
 
 function executeCommands(commands) {
-    createReqDirectory();
 
     //executing command[0]
     console.log(commands[0]);
@@ -75,18 +81,20 @@ function executeCommands(commands) {
 
             console.log('success');
         } catch (err) {
-
+            fs.rmSync(tempFileCopyPath());
         }
     } catch (err) {
-
+        fs.rmSync(filepath());
     }
 }
 
 
-function getTsFilesInDir() {
+function processFiles() {
     let dirent;
     let filename;
     let commands;
+
+    createReqDirectory();
 
     const targetDir = getTargetDir();
 
@@ -111,7 +119,7 @@ function getTsFilesInDir() {
 function run() {
     reqDir.targetDir = 'E:\\tsvids';
     Object.freeze(reqDir);
-    getTsFilesInDir();
+    processFiles();
 }
 
 
